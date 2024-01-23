@@ -1,0 +1,52 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "nvcc_build",
+            "command": "nvcc",
+            "args": [
+                "-o",
+                "${fileDirname}/out/${fileBasenameNoExtension}.o",
+                "${file}",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+              },
+              "presentation": {
+                "reveal": "always",
+                "panel": "new"
+              },
+              "options": {
+                "cwd": "${workspaceFolder}"
+              },
+              "problemMatcher": ["$nvcc"]
+        },
+        {
+            "type": "cppbuild",
+            "label": "gcc_build",
+            "command": "gcc",
+            "args": [
+                "-fdiagnostics-color=always",
+                "-g",
+                "${fileDirname}/out/utils.o",
+                "${file}",
+                "-o",
+                "${fileDirname}/out/${fileBasenameNoExtension}.o"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+              },
+              "presentation": {
+                "reveal": "always",
+                "panel": "new"
+              },
+              "options": {
+                "cwd": "${workspaceFolder}"
+              },
+              "problemMatcher": ["$gcc"]
+        }
+    ]
+}
