@@ -6,9 +6,10 @@
             "label": "nvcc_build",
             "command": "nvcc",
             "args": [
+                "${fileDirname}/out/utils_cuda.o",
+              "${file}",
                 "-o",
                 "${fileDirname}/out/${fileBasenameNoExtension}.o",
-                "${file}",
             ],
             "group": {
                 "kind": "build",
@@ -33,7 +34,8 @@
                 "${fileDirname}/out/utils.o",
                 "${file}",
                 "-o",
-                "${fileDirname}/out/${fileBasenameNoExtension}.o"
+                "${fileDirname}/out/${fileBasenameNoExtension}.o",
+                "-lm",
             ],
             "group": {
                 "kind": "build",

@@ -1,5 +1,5 @@
 /**
- * @file reg.cu
+ * @file reg_cuda.cu
  * @brief Contains the code for the CUDA version of the REG algorithm
  */
 
@@ -7,10 +7,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
-// #include "utils.cuh"
-
-#define SEQ "GTTAAGTTAAGT" //"GTTAAGTTAA"
-#define SEQ_LEN strlen(SEQ)
+#include "utils/utils_cuda.cuh"
 
 __host__ __device__ int ATCG_to_int(char c)
 {
@@ -34,75 +31,18 @@ __host__ __device__ int ATCG_to_int(char c)
     }
 }
 
-/*
- * @brief Open the sequence file.
- * @param *path path to the file
- * @return FILE* file pointer
- */
-FILE *openSequence(const char *path)
-{
-    FILE *fp;
-    fp = fopen(path, "r");
-    if (fp == NULL)
-    {
-        printf("Error while opening file : %s\n", path);
-        exit(EXIT_FAILURE);
-    }
-    return fp;
-}
-
-/*
- * @brief Get the size of the file.
- * @param *fp file pointer
- * @return long size of the file
- */
-long get_size_file(FILE *fp)
-{
-    fseek(fp, 0L, SEEK_END);
-    long size = ftell(fp);
-    rewind(fp);
-    return size;
-}
-
-/*
- * @brief Return the int corresponding to the given ADN sequence.
- * @param *seq sequence to convert
- * @return int converted sequence
- */
-int code_seq_bin(const char *seq)
-{
-    int bin = ATCG_to_int(seq[0]);
-    for (int i = 1; i < strlen(seq); i++)
-    {
-        bin = bin << 2;
-        bin = bin | ATCG_to_int(seq[i]);
-    }
-    return bin;
-}
-
-/*
- * @brief Return the time difference between two timeval.
- * @param *start start timeval
- * @param *end end timeval
- * @return float time difference
- */
-float time_diff(struct timeval *start, struct timeval *end)
-{
-    return (end->tv_sec - start->tv_sec) + 1e-6 * (end->tv_usec - start->tv_usec);
-}
-
-__global__ void researchThread(char *part, long size, int seq_hash, int effaceur)
+__global__ void researchThread(char *part, long size, int seq_hash, int seq_len, int effaceur)
 {
     int id = blockIdx.x * blockDim.x + threadIdx.x;
     int nb_threads = blockDim.x * blockDim.y * gridDim.x * gridDim.y;
     long part_size = size / nb_threads;
-    long start = id == 0 ? id * part_size : id * part_size - SEQ_LEN + 1;
+    long start = id == 0 ? id * part_size : id * part_size - seq_len + 1;
     long end = id * part_size + part_size;
 
     // Initialize the first window
     long i = start;
     int win = ATCG_to_int(part[i]);
-    for (short int j = 1; j < SEQ_LEN; j++)
+    for (short int j = 1; j < seq_len; j++)
     {
         i++;
         win = win << 2;
@@ -143,15 +83,20 @@ __global__ void researchThread(char *part, long size, int seq_hash, int effaceur
 int main()
 {
     // Initialization
-    printf("Researching '%s' :\n", SEQ);
+    printf("----- REG -----\n\n");
+    char *seq = input_seq();
     struct timeval start_loading, end_loading, start_loading_gpu, end_loading_gpu, start_searching, end_searching;
 
-    int seq_hash = code_seq_bin(SEQ);
-    int effaceur = (int)(pow(2, 2 * SEQ_LEN) - 1);
+    // Initialize variables
+    int seq_len = strlen(seq);
+    int seq_hash = code_seq_bin(seq);
+    int effaceur = (int)(pow(2, 2 * seq_len) - 1);
 
     // Get the file and its size
+    char path[60];
+    printf("Enter the path of the file to search in: ");
+    scanf("%s", path);
     gettimeofday(&start_loading, NULL);
-    const char *path = "sequences/GRCH38";
     FILE *file = openSequence(path);
     long size = get_size_file(file);
 
@@ -171,12 +116,15 @@ int main()
     printf("Loaded %ld octets in %fs on the GPU\n", size, time_diff(&start_loading_gpu, &end_loading_gpu));
 
     // Config threads
-    int threads_per_blocks = 128; // Adjust to the GPU
-    int blocks_per_grid = 10;     // Adjust to the GPU
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, 0);
+    int blocks_per_grid = deviceProp.multiProcessorCount;
+    int threads_per_blocks = 128; // Adjust if needed
 
     // launch threads
+    printf("Researching '%s' on %d threads :\n", seq, blocks_per_grid * threads_per_blocks);
     gettimeofday(&start_searching, NULL);
-    researchThread<<<blocks_per_grid, threads_per_blocks>>>(d_buffer, size, seq_hash, effaceur);
+    researchThread<<<blocks_per_grid, threads_per_blocks>>>(d_buffer, size, seq_hash, seq_len, effaceur);
 
     // Wait for threads to finish
     cudaDeviceSynchronize();

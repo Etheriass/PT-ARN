@@ -1,19 +1,18 @@
 /**
- * @file utils.cuh
+ * @file utils_cuda.cuh
  * @brief This file contains the functions used in the REG algorithm.
  */
 
 #include <stdio.h>
 #include <sys/time.h>
 
-int ATCG_to_int(char c);
 
 /**
  * @brief Open the sequence file.
  * @param *path path to the file
  * @return FILE* file pointer
  */
-FILE *openSequence(const char *path);
+FILE *openSequence(char *path);
 
 /**
  * @brief Return the int corresponding to the given ADN sequence.
@@ -36,3 +35,9 @@ long get_size_file(FILE *fp);
  * @return float time difference
  */
 float time_diff(struct timeval *start, struct timeval *end);
+
+/**
+ * @brief Get the sequence to search for.
+ * @return char* sequence to search for
+ */
+char *input_seq();

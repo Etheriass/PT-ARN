@@ -1,17 +1,19 @@
 /**
-* @file utils.cu
+* @file utils_cuda.cu
 * @brief This file contains the functions used in the REG algorithm.    
 */
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/time.h>
+#include "utils_cuda.cuh"
 
 /**
 * @brief Convert a char to an int.
 * @param c char to convert
 * @return int converted char
 */
-char ATCG_to_int(char c)
+char ATCG_to_int_intern(char c)
 { 
     switch (c)
     {
@@ -38,7 +40,7 @@ char ATCG_to_int(char c)
  * @param *path path to the file
  * @return FILE* file pointer
  */
-FILE *openSequence(const char *path)
+FILE *openSequence(char *path)
 {
     FILE *fp;
     fp = fopen(path, "r");
@@ -71,11 +73,11 @@ long get_size_file(FILE *fp)
  */
 int code_seq_bin(const char *seq)
 {
-    int bin = ATCG_to_int(seq[0]);
+    int bin = ATCG_to_int_intern(seq[0]);
     for (int i = 1; i < strlen(seq); i++)
     {
         bin = bin << 2;
-        bin = bin | ATCG_to_int(seq[i]);
+        bin = bin | ATCG_to_int_intern(seq[i]);
     }
     return bin;
 }
@@ -89,4 +91,35 @@ int code_seq_bin(const char *seq)
 float time_diff(struct timeval *start, struct timeval *end)
 {
     return (end->tv_sec - start->tv_sec) + 1e-6 * (end->tv_usec - start->tv_usec);
+}
+
+
+/**
+ * @brief Get the sequence to search for.
+ * @return char* sequence to search for
+ */
+char *input_seq(){
+    char *seq = (char *)malloc(16);
+    printf("Enter the sequence to search for: ");
+    scanf("%s", seq);
+    if (strlen(seq) > 16)
+    {
+        printf("Too long sequence. Please enter shorter sequence.\n");
+        return input_seq();
+    }
+    int valid = 1;
+    for (int i = 0; i < strlen(seq); i++)
+    {
+        if (seq[i] != 'A' && seq[i] != 'T' && seq[i] != 'C' && seq[i] != 'G')
+        {
+            valid = 0;
+            break;
+        }
+    }
+    if (!valid)
+    {
+        printf("Invalid DNA sequence. Please enter a valid DNA sequence.\n");
+        return input_seq();
+    }
+    return seq;
 }

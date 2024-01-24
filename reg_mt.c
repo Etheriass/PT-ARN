@@ -9,15 +9,15 @@
 #include <math.h>
 #include <sys/time.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "utils/utils.h"
 
-#define SEQ "GTTAAGTTAAGT"  // sequence to research
-#define SEQ_LEN strlen(SEQ) // length of the sequence
-#define THREADS 4           // number of threads
+#define THREADS sysconf(_SC_NPROCESSORS_ONLN) // number of threads
 
 // Global variables
 char *buffer;
 int seq_hash;
+int seq_len;
 int effaceur;
 int found = 0;
 typedef struct
@@ -33,7 +33,7 @@ void *researchThread(void *arg)
 
     // Initialize the first window
     int win = ATCG_to_int(buffer[i]);
-    for (short int j = 1; j < SEQ_LEN; j++)
+    for (short int j = 1; j < seq_len; j++)
     {
         i++;
         win = win << 2;
@@ -74,12 +74,15 @@ void *researchThread(void *arg)
 int main()
 {
     // Initialization
-    printf("Researching '%s' :\n", SEQ);
+    printf("----- REG -----\n\n");
+    char *seq = input_seq();
     struct timeval start_loading, end_loading, start_searching, end_searching;
 
     // Get the file and its size
     gettimeofday(&start_loading, NULL);
-    const char *path = "sequences/GRCH38";
+    char path[60];
+    printf("Enter the path of the file to search in: ");
+    scanf("%s", path);
     FILE *file = openSequence(path);
     long size = get_size_file(file);
 
@@ -91,8 +94,10 @@ int main()
     printf("Loaded %ld octets in %fs\n", size, time_diff(&start_loading, &end_loading));
 
     // Initialize variables
-    seq_hash = code_seq_bin(SEQ);
-    effaceur = (pow(2, 2 * SEQ_LEN) - 1);
+    seq_len = strlen(seq);
+    seq_hash = code_seq_bin(seq);
+    effaceur = (pow(2, 2 * seq_len) - 1);
+    printf("Researching '%s' with %ld threads :\n", seq, THREADS);
     gettimeofday(&start_searching, NULL);
 
     // Launch threads
@@ -114,7 +119,7 @@ int main()
 
     printf("Found %d times\n", found);
     printf("Time taken: %f seconds\n", time_diff(&start_searching, &end_searching));
-    
+
     free(thread_data);
     free(buffer);
     return 0;

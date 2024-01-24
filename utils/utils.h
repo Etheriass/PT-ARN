@@ -42,3 +42,9 @@ int code_seq_bin(const char *seq);
  * @return float time difference
  */
 float time_diff(struct timeval *start, struct timeval *end);
+
+/**
+ * @brief Get the sequence to search for.
+ * @return char* sequence to search for
+ */
+char *input_seq();

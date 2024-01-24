@@ -10,18 +10,19 @@
 #include <sys/time.h>
 #include "utils/utils.h"
 
-#define SEQ "GTTAAGTTAAGT"
-#define SEQ_LEN strlen(SEQ)
 
 int main()
 {
     // Initialization
-    printf("Researching '%s' :\n", SEQ);
+    printf("----- REG -----\n\n");
+    char *seq = input_seq();
     struct timeval start_loading, end_loading, start_searching, end_searching;
 
     // Get the file and its size
+    char path[60];
+    printf("Enter the path of the file to search in: ");
+    scanf("%s", path);
     gettimeofday(&start_loading, NULL);
-    const char *path = "sequences/GRCH38";
     FILE *file = openSequence(path);
     long size = get_size_file(file);
 
@@ -33,11 +34,13 @@ int main()
     printf("Loaded %ld octets in %fs\n", size, time_diff(&start_loading, &end_loading));
 
     // Initialize variables
-    const int seq_hash = code_seq_bin(SEQ);
+    const int SEQ_LEN = strlen(seq);
+    const int seq_hash = code_seq_bin(seq);
     long nb_lines = 0;
     int c = 0;
     int found = 0;
     const int effaceur = (pow(2, 2 * SEQ_LEN) - 1);
+    printf("Researching '%s' :\n", seq);
     gettimeofday(&start_searching, NULL);
 
     // Initialize the first window
